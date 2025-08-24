@@ -1,0 +1,34 @@
+# OCT Fingerprint System - Requirements for Windows
+# ระบบตรวจสอบลายนิ้วมือ OCT สำหรับ Windows
+
+# Core GUI Framework
+tkinter  # Usually comes with Python on Windows
+
+# Computer Vision & Image Processing
+opencv-python==4.8.1.78
+Pillow==10.0.1
+numpy==1.24.4
+
+# Deep Learning & ONNX Runtime
+onnxruntime==1.16.3
+scikit-learn==1.3.2
+
+# Database
+# sqlite3 is built into Python - no separate installation needed
+
+# Serial Communication (Arduino)
+pyserial==3.5
+
+# Screen Capture (Optional - for live capture functionality)
+mss==9.0.1
+
+# Additional utilities
+glob2==0.7
+datetime  # Built into Python
+
+# Development & Debugging (Optional)
+# matplotlib==3.7.5  # Uncomment if needed for visualization
+# jupyter==1.0.0     # Uncomment if using notebooks
+
+# Windows-specific packages
+# pywin32==306       # Uncomment if needed for Windows-specific features
