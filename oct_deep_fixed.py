@@ -480,9 +480,24 @@ class BasicFeatureExtractor:
         return features
 
 class VGG16FeatureExtractor(BasicFeatureExtractor):
-    """VGG-16 ONNX-based deep learning feature extractor with classification capability"""
+    """Deep learning feature extractor using available ONNX models"""
     
-    def __init__(self, model_path="models/vgg16-7.onnx"):
+    def __init__(self, model_path=None):
+        # Try to find available ONNX models
+        if model_path is None:
+            model_candidates = [
+                "models/vgg16-7.onnx",
+                "models/resnet50-v2-7.onnx", 
+                "models/dl_cls_3b4887fb11.onnx",
+                "models/dl_cls_c87c7530bb.onnx",
+                "models/dl_cls_e19efbebbb.onnx"
+            ]
+            
+            for candidate in model_candidates:
+                if os.path.exists(candidate):
+                    model_path = candidate
+                    break
+        
         self.model_path = model_path
         self.session = None
         self.input_name = None
@@ -493,16 +508,16 @@ class VGG16FeatureExtractor(BasicFeatureExtractor):
         self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(1, 3, 1, 1)
         self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(1, 3, 1, 1)
         
-        if ONNX_AVAILABLE:
+        if ONNX_AVAILABLE and model_path:
             self.load_model()
         else:
-            print("ONNX not available, falling back to basic features")
+            print("ONNX not available or no model found, using basic features")
             super().__init__()
     
     def load_model(self):
-        """Load VGG-16 ONNX model"""
-        if not os.path.exists(self.model_path):
-            print(f"VGG-16 model not found: {self.model_path}")
+        """Load available ONNX model"""
+        if not self.model_path or not os.path.exists(self.model_path):
+            print(f"Deep learning model not found: {self.model_path}")
             super().__init__()
             return False
         
@@ -511,7 +526,8 @@ class VGG16FeatureExtractor(BasicFeatureExtractor):
             self.input_name = self.session.get_inputs()[0].name
             self.output_name = self.session.get_outputs()[0].name
             
-            print(f"VGG-16 model loaded: {self.model_path}")
+            model_name = os.path.basename(self.model_path)
+            print(f"Deep learning model loaded: {model_name}")
             print(f"Input: {self.input_name}, Output: {self.output_name}")
             
             # Get input shape
@@ -523,30 +539,9 @@ class VGG16FeatureExtractor(BasicFeatureExtractor):
             return True
             
         except Exception as e:
-            print(f"Error loading VGG-16 model: {e}")
+            print(f"Error loading deep learning model: {e}")
             super().__init__()
             return False
-    
-    def preprocess_image(self, image, target_size=(224, 224)):
-        """Preprocess image for VGG19 input"""
-        if image is None:
-            return None
-        
-        # Convert to RGB if grayscale
-        if len(image.shape) == 2:
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-        elif len(image.shape) == 3 and image.shape[2] == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        
-        # Resize image
-        image = cv2.resize(image, target_size, interpolation=cv2.INTER_LANCZOS4)
-        
-        # Convert to float and normalize to [0, 1]
-        image = image.astype(np.float32) / 255.0
-        
-        # Transpose to CHW format and add batch dimension
-        image = np.transpose(image, (2, 0, 1))
-        image = np.expand_dims(image, axis=0)
     
     def preprocess_image(self, image, target_size=(224, 224)):
         """Preprocess image for VGG-16 input"""
@@ -578,24 +573,37 @@ class VGG16FeatureExtractor(BasicFeatureExtractor):
     
     def extract_features(self, image):
         """Extract VGG-16 deep learning features from image"""
-        if not self.model_loaded or not ONNX_AVAILABLE:
+        if not self.model_loaded or not ONNX_AVAILABLE or self.session is None:
+            print("VGG-16 not available, using basic features")
             return super().extract_features(image)
         
-        # Preprocess image
-        processed_image = self.preprocess_image(image)
-        if processed_image is None:
+        # Validate input image
+        if image is None:
+            print("Input image is None")
             return None
         
         try:
+            # Preprocess image
+            processed_image = self.preprocess_image(image)
+            if processed_image is None:
+                print("Image preprocessing failed")
+                return None
+            
             # Run VGG-16 inference
             outputs = self.session.run([self.output_name], {self.input_name: processed_image})
             features = outputs[0].flatten().astype(np.float32)
+            
+            # Validate feature extraction
+            if features is None or len(features) == 0:
+                print("Feature extraction returned empty result")
+                return None
             
             # L2 normalization
             norm = np.linalg.norm(features)
             if norm > 0:
                 features = features / norm
             
+            print(f"VGG-16 features extracted: shape={features.shape}")
             return features
             
         except Exception as e:
@@ -1603,40 +1611,6 @@ class OCTDeepFingerprintSystem:
         ttk.Button(control_frame, text="ทดสอบ Arduino", command=self.test_arduino).pack(side='left', padx=5)
         ttk.Button(control_frame, text="ล้างล็อก", command=self.clear_logs).pack(side='left', padx=5)
         
-        # Arduino Configuration
-        arduino_frame = ttk.LabelFrame(self.admin_frame, text="🔧 การตั้งค่า Arduino Relay", padding=10)
-        arduino_frame.pack(fill='x', padx=5, pady=5)
-        
-        # Relay Pin Setting
-        pin_frame = ttk.Frame(arduino_frame)
-        pin_frame.pack(fill='x', pady=5)
-        
-        ttk.Label(pin_frame, text="Digital Pin สำหรับ Relay:").pack(side='left')
-        
-        self.relay_pin_var = tk.StringVar(value=str(self.relay_pin))
-        pin_spinbox = ttk.Spinbox(pin_frame, from_=2, to=13, width=5, textvariable=self.relay_pin_var,
-                                 command=self.update_relay_pin)
-        pin_spinbox.pack(side='left', padx=10)
-        
-        ttk.Label(pin_frame, text="(Pin 2-13)").pack(side='left', padx=5)
-        
-        # Duration Setting
-        duration_frame = ttk.Frame(arduino_frame)
-        duration_frame.pack(fill='x', pady=5)
-        
-        ttk.Label(duration_frame, text="ระยะเวลาเปิดประตู (วินาที):").pack(side='left')
-        
-        self.relay_duration_var = tk.StringVar(value=str(self.relay_open_duration))
-        duration_spinbox = ttk.Spinbox(duration_frame, from_=1, to=10, width=5, textvariable=self.relay_duration_var,
-                                      command=self.update_relay_duration)
-        duration_spinbox.pack(side='left', padx=10)
-        
-        ttk.Label(duration_frame, text="(1-10 วินาที)").pack(side='left', padx=5)
-        
-        # Apply button
-        ttk.Button(arduino_frame, text="🔄 ใช้การตั้งค่า", 
-                  command=self.apply_arduino_settings).pack(pady=5)
-        
         # User management
         user_mgmt_frame = ttk.LabelFrame(self.admin_frame, text="จัดการผู้ใช้", padding=10)
         user_mgmt_frame.pack(fill='both', expand=True, padx=5, pady=5)
@@ -2111,74 +2085,15 @@ class OCTDeepFingerprintSystem:
             return False
     
     def test_arduino(self):
-        """Test Arduino connection and relay"""
+        """Test Arduino connection"""
         if self.arduino_connected:
             success = self.open_door()
             if success:
-                messagebox.showinfo("ทดสอบ Arduino", f"✅ ทดสอบสำเร็จ!\n🚪 ประตูแม่เหล็กเปิด Pin {self.relay_pin}\n⏰ เวลา: {self.relay_open_duration} วินาที")
+                messagebox.showinfo("ทดสอบ Arduino", "ทดสอบสำเร็จ! ประตูเปิดแล้ว")
             else:
-                messagebox.showerror("ทดสอบ Arduino", "❌ ทดสอบไม่สำเร็จ - ตรวจสอบการเชื่อมต่อ")
+                messagebox.showerror("ทดสอบ Arduino", "ทดสอบไม่สำเร็จ")
         else:
-            # Try to reconnect
-            messagebox.showinfo("ทดสอบ Arduino", "🔄 พยายามเชื่อมต่อใหม่...")
-            if self.connect_arduino():
-                self.test_arduino()  # Try again after connecting
-            else:
-                messagebox.showerror("ทดสอบ Arduino", "❌ ไม่สามารถเชื่อมต่อ Arduino ได้\n\n🔧 ตรวจสอบ:\n- สาย USB\n- Driver Arduino\n- พอร์ต COM")
-    
-    def update_relay_pin(self):
-        """Update relay pin from UI"""
-        try:
-            new_pin = int(self.relay_pin_var.get())
-            if 2 <= new_pin <= 13:
-                self.relay_pin = new_pin
-                print(f"Relay pin updated to: {self.relay_pin}")
-            else:
-                self.relay_pin_var.set(str(self.relay_pin))  # Reset to current value
-        except ValueError:
-            self.relay_pin_var.set(str(self.relay_pin))  # Reset to current value
-    
-    def update_relay_duration(self):
-        """Update relay duration from UI"""
-        try:
-            new_duration = int(self.relay_duration_var.get())
-            if 1 <= new_duration <= 10:
-                self.relay_open_duration = new_duration
-                print(f"Relay duration updated to: {self.relay_open_duration} seconds")
-            else:
-                self.relay_duration_var.set(str(self.relay_open_duration))  # Reset to current value
-        except ValueError:
-            self.relay_duration_var.set(str(self.relay_open_duration))  # Reset to current value
-    
-    def apply_arduino_settings(self):
-        """Apply Arduino settings and reconnect"""
-        # Update values from UI
-        self.update_relay_pin()
-        self.update_relay_duration()
-        
-        if self.arduino_connected:
-            # Reconnect with new settings
-            try:
-                if self.arduino_serial:
-                    self.arduino_serial.close()
-                self.arduino_connected = False
-                
-                success = self.connect_arduino()
-                if success:
-                    messagebox.showinfo("การตั้งค่า Arduino", 
-                                      f"✅ ใช้การตั้งค่าใหม่สำเร็จ!\n🔌 Pin: {self.relay_pin}\n⏰ ระยะเวลา: {self.relay_open_duration} วินาที")
-                else:
-                    messagebox.showerror("การตั้งค่า Arduino", "❌ ไม่สามารถเชื่อมต่อด้วยการตั้งค่าใหม่ได้")
-            except Exception as e:
-                messagebox.showerror("การตั้งค่า Arduino", f"❌ ข้อผิดพลาด: {str(e)}")
-        else:
-            # Try to connect with new settings
-            success = self.connect_arduino()
-            if success:
-                messagebox.showinfo("การตั้งค่า Arduino", 
-                                  f"✅ เชื่อมต่อสำเร็จด้วยการตั้งค่าใหม่!\n🔌 Pin: {self.relay_pin}\n⏰ ระยะเวลา: {self.relay_open_duration} วินาที")
-            else:
-                messagebox.showerror("การตั้งค่า Arduino", "❌ ไม่สามารถเชื่อมต่อได้")
+            messagebox.showwarning("ทดสอบ Arduino", "Arduino ไม่ได้เชื่อมต่อ")
     
     def close_app(self):
         """Close application with proper cleanup"""
