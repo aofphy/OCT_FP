@@ -1,0 +1,100 @@
+# Large model files - exceeds GitHub's 100MB limit
+models/vgg-16.off
+models/vgg16-7.onnx
+models/vgg19-caffe2-9.onnx
+
+# Other large model files (common ONNX models)
+models/*.onnx
+models/*.off
+models/*.pb
+models/*.h5
+models/*.weights
+models/*.bin
+
+# Compiled Python files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# SQLite databases (optional - uncomment if you don't want to track them)
+# *.sqlite
+# *.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Large datasets and processed files
+fingerprints_processed/
+user_models/
+
+# Project bundles
+*.zip
+*.tar.gz
+*.rar
