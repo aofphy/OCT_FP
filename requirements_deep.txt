@@ -1,0 +1,24 @@
+# Deep Learning OCT Fingerprint System Requirements
+
+# Core dependencies
+numpy>=1.21.0
+opencv-python>=4.5.0
+Pillow>=8.0.0
+tkinter  # Usually included with Python
+
+# Deep Learning
+onnxruntime>=1.12.0
+scikit-learn>=1.0.0
+joblib>=1.0.0
+
+# Image processing
+scikit-image>=0.18.0
+
+# Serial communication (for Arduino)
+pyserial>=3.5
+
+# Database
+# sqlite3 is included with Python
+
+# Optional for better performance
+onnxruntime-gpu>=1.12.0  # For GPU acceleration if available

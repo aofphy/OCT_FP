@@ -1,0 +1,27 @@
+# Requirements for OCT Fingerprint System with Arduino Control
+
+# Core libraries
+opencv-python>=4.5.0
+numpy>=1.21.0
+Pillow>=8.0.0
+scikit-image>=0.18.0
+
+# GUI libraries
+tkinter  # Usually comes with Python
+ttkthemes
+
+# Database
+sqlite3  # Built-in with Python
+
+# Screen capture
+mss>=6.1.0
+
+# Arduino communication
+pyserial>=3.5
+
+# Optional - for better styling
+ttkthemes>=3.2.0
+
+# Deep learning inference (optional; used if models/.onnx present)
+# For Apple Silicon, pip may install onnxruntime-silicon; otherwise onnxruntime.
+onnxruntime>=1.17.0
